@@ -24,3 +24,22 @@ class Directory(BaseFile):
         self.files = []
         self.directories = []
         self.nodes = []
+
+
+class BaseLink:
+    def __init__(self, link_path, symbolic=True):
+        self.link_path = link_path
+        self.symbolic = symbolic
+
+
+class SymbolicLink(BaseLink):
+    def __init__(self, link_path):
+        BaseLink.__init__(self, link_path)
+
+
+class HardLink(BaseLink):
+    def __init__(self, link_path, symbolic):
+        BaseLink.__init__(self, link_path, symbolic)
+
+h = HardLink("/", False)
+print(h.link_path)
