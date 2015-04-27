@@ -7,17 +7,20 @@ class File(BaseFile):
     def __init__(self, content):
         BaseFile.__init__(self, False)
         self.content = content
+        self.size = len(content) + 1
 
     def append(self, text):
         self.content += text
+        self.size += len(text)
 
     def truncate(self, text):
         self.content = text
+        self.size = len(text)
 
-    def size(self):
-        return len(self.content) + 1
-f = File("a")
-print(f.content)
-f.truncate("new content")
-print(f.content)
-print(f.size())
+
+class Directory(BaseFile):
+    def __init__(self):
+        BaseFile.__init__(self, True)
+        self.files = []
+        self.directories = []
+        self.nodes = []
