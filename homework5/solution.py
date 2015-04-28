@@ -31,6 +31,12 @@ class Directory(BaseFile):
         else:
             return BaseFile.__getattribute__(self, name)
 
+    def __getitem__(self, current_object):
+        if (current_object[-1] == '/'):
+            return self.__dict__['directories'][current_object[:-1]]
+        else:
+            return self.__dict__['files'][current_object]
+
     def add_file(self, file_name, file_object):
         self.__dict__['files'].update({file_name: file_object})
 
@@ -52,6 +58,8 @@ class HardLink(BaseLink):
     def __init__(self, link_path, symbolic):
         BaseLink.__init__(self, link_path, symbolic)
 
+'''
+
 
 class FileSystem:
     def __init__(self, size):
@@ -59,23 +67,30 @@ class FileSystem:
         self.available_size = size
         self.home = {"/": Directory()}
 
-    def get_node(self, path):
-        path = path.split('/', 1)[-1]
-        print(path)
+    def find_object(self, current_directory, path):
+        if path[0] == '/':
+            path = path[1:]
 
-        if path in self.home:
-            return self.home[path]
+        slashes_count = path.count('/')
+        if slashes_count == 0 or slashes_count == 1:
+            '''            current_path = path
+            #            rest_path = ''
+            '''
+            return current_directory[path]
         else:
-            #print(path.split('/', 1)[-1])
-            print("f")
-f = FileSystem(5)
-f.get_node('/home/georgi/usr/share')
-'''
+            current_path, rest_path = path.split('/', 1)
+            current_directory = current_directory[current_path]
+            return self.find_object(current_directory, rest_path)
+
+    def create(self, path, directory=False, content=''):
+        return 5
+
+
 d = Directory()
 f = File("first_File_content_here")
 d.add_file("first_file", f)
 d.add_file("second_file", File("second file"))
-print(d.files)
 
 d.add_directory("dir 1", Directory())
-print(d.directories)
+
+print(d['dir 1/'].files)
