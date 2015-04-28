@@ -33,7 +33,7 @@ class Directory(BaseFile):
 
     def __getitem__(self, current_object):
         if (current_object[-1] == '/'):
-            return self.__dict__['directories'][current_object[:-1]]
+            return self.__dict__['directories'][current_object.rstrip('/')]
         else:
             return self.__dict__['files'][current_object]
 
@@ -65,20 +65,18 @@ class FileSystem:
     def __init__(self, size):
         self.size = size
         self.available_size = size
-        self.home = {"/": Directory()}
+        self.home = Directory()
 
     def __find_object(self, current_directory, path):
-#        if path[0] == '/':
-#            path = path[1:]
-
-        slashes_count = path.count('/')
-        if slashes_count == 0 or slashes_count == 1:
-            #            current_path = path
-            #            rest_path = ''
-
-            return current_directory[path]
+        if path.count('/') <= 2:
+            if len(path) > 1:
+                path = path.lstrip('/')
+                return current_directory[path]
+            else:
+                return current_directory
         else:
             current_path, rest_path = path.split('/', 1)
+            print(rest_path)
             current_directory = current_directory[current_path]
             return self.find_object(current_directory, '/' + rest_path)
 
@@ -90,15 +88,17 @@ class FileSystem:
             path, file_name = path.rsplit('/', 1)
             parent_directory = self.__find_object(self.home, '/' + path)
             parent_directory.add_file(file_name, File(content))
-#        parent_directory = self.__find_object(home, path)
-#        parent_directory.add_directory()
+        else:
+            path, directory_name = path.split('/', 1)
+            parent_directory = self.__find_object(self.home, '/' + path)
+            directory_name = directory_name.rstrip('/')
+            parent_directory.add_directory(directory_name, Directory())
 
 fs = FileSystem(50)
 #print(fs.get_node('/'))
 #fs.create('//home/usr')
-fs.create('/home')
-print(fs.get_node('/').files)
-#fs.get_node('/home')
+fs.create('/home', directory=True)
+print(fs.get_node('/').directories)
 '''
 d = Directory()
 f = File("first_File_content_here")
