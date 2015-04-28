@@ -67,25 +67,39 @@ class FileSystem:
         self.available_size = size
         self.home = {"/": Directory()}
 
-    def find_object(self, current_directory, path):
-        if path[0] == '/':
-            path = path[1:]
+    def __find_object(self, current_directory, path):
+#        if path[0] == '/':
+#            path = path[1:]
 
         slashes_count = path.count('/')
         if slashes_count == 0 or slashes_count == 1:
-            '''            current_path = path
+            #            current_path = path
             #            rest_path = ''
-            '''
+
             return current_directory[path]
         else:
             current_path, rest_path = path.split('/', 1)
             current_directory = current_directory[current_path]
-            return self.find_object(current_directory, rest_path)
+            return self.find_object(current_directory, '/' + rest_path)
+
+    def get_node(self, path):
+        return self.__find_object(self.home, path)
 
     def create(self, path, directory=False, content=''):
-        return 5
+        if not directory:
+            path, file_name = path.rsplit('/', 1)
+            parent_directory = self.__find_object(self.home, '/' + path)
+            parent_directory.add_file(file_name, File(content))
+#        parent_directory = self.__find_object(home, path)
+#        parent_directory.add_directory()
 
-
+fs = FileSystem(50)
+#print(fs.get_node('/'))
+#fs.create('//home/usr')
+fs.create('/home')
+print(fs.get_node('/').files)
+#fs.get_node('/home')
+'''
 d = Directory()
 f = File("first_File_content_here")
 d.add_file("first_file", f)
@@ -94,3 +108,4 @@ d.add_file("second_file", File("second file"))
 d.add_directory("dir 1", Directory())
 
 print(d['dir 1/'].files)
+'''
