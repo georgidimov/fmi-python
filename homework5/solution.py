@@ -8,15 +8,15 @@ class File(BaseFile):
         BaseFile.__init__(self, False)
         self.content = content
 
+    def __getattr__(self, name):
+        if name == 'size':
+            return len(self.content) + 1
+
     def append(self, text):
         self.content += text
 
     def truncate(self, text):
         self.content = text
-
-    def __getattr__(self, name):
-        if name == 'size':
-            return len(self.content) + 1
 
 
 class Directory(BaseFile):
@@ -38,6 +38,10 @@ class Directory(BaseFile):
             return self.__dict__['directories'][current_object]
         else:
             raise "no such file or directory"
+
+    def __getattr__(self, name):
+        if name == 'size':
+            return 1
 
     def add_file(self, file_name, file_object):
         self.__dict__['files'].update({file_name: file_object})
@@ -65,9 +69,9 @@ class HardLink(BaseLink):
 
 class FileSystem:
     def __init__(self, size):
-        self.size = size
-        self.available_size = size
         self.home = Directory()
+        self.size = size
+        self.available_size = self.size - self.home.size
 
     def __find_object(self, current_directory, path):
         if path.count('/') <= 2:
@@ -86,14 +90,19 @@ class FileSystem:
         return self.__find_object(self.home, path)
 
     def create(self, path, directory=False, content=''):
+        path, object_name = path.split('/', 1)
+        parent_directory = self.__find_object(self.home, '/' + path)
+
         if not directory:
-            path, file_name = path.rsplit('/', 1)
-            parent_directory = self.__find_object(self.home, '/' + path)
-            parent_directory.add_file(file_name, File(content))
+            new_file = File(content)
+            parent_directory.add_file(object_name, new_file)
+            new_object_size = new_file.size
         else:
-            path, directory_name = path.split('/', 1)
-            parent_directory = self.__find_object(self.home, '/' + path)
-            parent_directory.add_directory(directory_name, Directory())
+            new_directory = Directory()
+            parent_directory.add_directory(object_name, new_directory)
+            new_object_size = new_directory.size
+
+        self.available_size -= 1
 
 
 #fs = FileSystem(50)
