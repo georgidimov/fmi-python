@@ -32,10 +32,12 @@ class Directory(BaseFile):
             return BaseFile.__getattribute__(self, name)
 
     def __getitem__(self, current_object):
-        if (current_object[-1] == '/'):
-            return self.__dict__['directories'][current_object.rstrip('/')]
-        else:
+        if current_object in self.__dict__['files']:
             return self.__dict__['files'][current_object]
+        elif current_object in self.__dict__['directories']:
+            return self.__dict__['directories'][current_object]
+        else:
+            raise "no such file or directory"
 
     def add_file(self, file_name, file_object):
         self.__dict__['files'].update({file_name: file_object})
@@ -91,14 +93,14 @@ class FileSystem:
         else:
             path, directory_name = path.split('/', 1)
             parent_directory = self.__find_object(self.home, '/' + path)
-            directory_name = directory_name.rstrip('/')
             parent_directory.add_directory(directory_name, Directory())
 
-fs = FileSystem(50)
-#print(fs.get_node('/'))
-#fs.create('//home/usr')
-fs.create('/home', directory=True)
-print(fs.get_node('/').directories)
+
+#fs = FileSystem(50)
+#fs.create('/home', directory=True)
+#print(fs.get_node('/home').is_directory)
+
+
 '''
 d = Directory()
 f = File("first_File_content_here")
