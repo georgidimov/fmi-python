@@ -1,3 +1,40 @@
+class FileSystemError(Exception):
+    def __init__(self, message=''):
+        self.message = message
+
+
+class DestinationNodeExistsError(FileSystemError):
+    pass
+
+
+class NodeDoesNotExistError(FileSystemError):
+    pass
+
+
+class SourceNodeDoesNotExistError(NodeDoesNotExistError):
+    pass
+
+
+class DestinationNodeDoesNotExistError(NodeDoesNotExistError):
+    pass
+
+
+class FileSystemMountError(FileSystemError):
+    pass
+
+
+class MountPointDoesNotExistError(FileSystemMountError):
+    pass
+
+
+class MountPointNotADirectoryError(FileSystemMountError):
+    pass
+
+
+class MountPointNotEmptyError(FileSystemMountError):
+    pass
+
+
 class BaseFile:
     def __init__(self, is_directory):
         self.is_directory = is_directory
@@ -37,7 +74,8 @@ class Directory(BaseFile):
         elif current_object in self.__dict__['directories']:
             return self.__dict__['directories'][current_object]
         else:
-            raise "no such file or directory"
+            print("getitem {}".format(current_object))
+            raise NodeDoesNotExistError
 
     def __getattr__(self, name):
         if name == 'size':
@@ -74,24 +112,35 @@ class FileSystem:
         self.available_size = self.size - self.home.size
 
     def __find_object(self, current_directory, path):
-        if path.count('/') <= 2:
+        if path.count('/') < 2:
             if len(path) > 1:
-                path = path.lstrip('/')
-                return current_directory[path]
+                current_object = path.split('/')[-1]
+                return current_directory[current_object]
             else:
                 return current_directory
         else:
-            current_path, rest_path = path.split('/', 1)
-            print(rest_path)
-            current_directory = current_directory[current_path]
-            return self.find_object(current_directory, '/' + rest_path)
+            current_path, rest_path = path.lstrip('/').split('/', 1)
+            print("\n{}\n{} - {}".format(path, current_path, rest_path))
+            current_directory = current_directory[current_path.lstrip('/')]
+            return self.__find_object(current_directory, '/' + rest_path)
 
     def get_node(self, path):
         return self.__find_object(self.home, path)
 
     def create(self, path, directory=False, content=''):
-        path, object_name = path.split('/', 1)
-        parent_directory = self.__find_object(self.home, '/' + path)
+        current_path, object_name = path.rsplit('/', 1)
+
+        try:
+            parent_directory = self.__find_object(self.home, current_path)
+        except NodeDoesNotExistError:
+            raise DestinationNodeDoesNotExistError
+
+        try:
+            self.get_node(path)
+        except NodeDoesNotExistError:
+            pass
+        else:
+            raise DestinationNodeExistsError
 
         if not directory:
             new_file = File(content)
@@ -102,13 +151,32 @@ class FileSystem:
             parent_directory.add_directory(object_name, new_directory)
             new_object_size = new_directory.size
 
-        self.available_size -= 1
+        self.available_size -= new_object_size
 
 
-#fs = FileSystem(50)
+fs = FileSystem(16)
+fs.create('/home', directory=True)
+fs.create('/home/foo', directory=True)
+fs.create('/home/foo/joo', directory=True)
+print(fs.get_node('/home/foo/joo').directories)
+
+#fs.create('/home/foo/joo/roo', directory=True)
+
+
+# with self.assertRaises(solution.DestinationNodeExistsError):
+#            fs.create('/home/foo/joo/roo', directory=True)fs = FileSystem(50)
 #fs.create('/home', directory=True)
-#print(fs.get_node('/home').is_directory)
+#fs.create('/home/usr', directory=True)
+#print(fs.get_node('/home/usr'))
+#fs.create('/home/usr', directory=True)
 
+#fs.create('/home/a', directory=True)
+#print("\n a createrd")
+#print(fs.get_node('/home/a'))
+#print(fs.get_node('/home/a').directories)
+#fs.create('/home/georgi', directory=True)
+
+#print(fs.get_node('/').directories)
 
 '''
 d = Directory()
