@@ -75,26 +75,21 @@ class File(BaseFile):
 class Directory(BaseFile):
     def __init__(self):
         BaseFile.__init__(self, True)
-        self.files_container = {}
-        self.directories_container = {}
+        self.files_pool = {}
+        self.dirs_pool = {}
 
     def __getattribute__(self, name):
-        '''
-        if name == 'files' or name == 'directories':
-            return list(self.__dict__[name].values())
-        elif name == 'nodes':
-            return self.files + self.directories
-        else:
-            return BaseFile.__getattribute__(self, name)
-        '''
-        get_values = lambda name: object.__getattribute__(self, name).values()
+        def get_objects(name):
+            return list(object.__getattribute__(self, name).values())
+
+        def get_pool(name):
+            return object.__getattribute__(self, name)
+
         attributes = {
-            #'files': super(Directory, self).__getattribute__(name)
-#            'files': list(object.__getattribute__(self, 'files_container').values()),
-            'files': list(get_values('files_container')),
-            'directories': list(get_values('directories_container'))
-#            'directories': object.__getattribute__(self, name),
-            #'nodes': object.__getattribute__(self, 'files') + object.__getattribute__(self, 'directories')
+            'files': get_objects('files_pool'),
+            'directories': get_objects('dirs_pool'),
+            'nodes': get_objects('files_pool') + get_objects('dirs_pool'),
+            'nodes_pool': dict(get_pool('files_pool'), **get_pool('dirs_pool'))
         }
 
         if name in attributes:
@@ -106,32 +101,38 @@ class Directory(BaseFile):
         if name == 'size':
             size = 1
 
-            for current_file in self.__dict__['files'].values():
+            for current_file in self.files:
                 size += current_file.size
 
-            for current_directory in self.__dict__['directories'].values():
+            for current_directory in self.directories:
                 size += current_directory.size
 
             return size
 
     def __getitem__(self, current_object):
-        if current_object in self.__dict__['files']:
-            return self.__dict__['files'][current_object]
-        elif current_object in self.__dict__['directories']:
-            return self.__dict__['directories'][current_object]
+        '''
+        if current_object in self.files_pool:
+            return self.files_pool[current_object]
+        elif current_object in self.dirs_pool:
+            return self.dirs_pool[current_object]
+        else:
+            raise NodeDoesNotExistError
+        '''
+        if current_object in self.nodes_pool:
+            return self.nodes_pool[current_object]
         else:
             raise NodeDoesNotExistError
 
     def add_file(self, file_name, file_object):
-#        self.__dict__['files_container'].update({file_name: file_object})
-        self.files_container.update({file_name: file_object})
+        self.files_pool.update({file_name: file_object})
+
     def add_directory(self, directory_name, directory_object):
-#        self.__dict__['directories'].update({directory_name: directory_object})
-        self.directories_container.update({directory_name: directory_object})
+        self.dirs_pool.update({directory_name: directory_object})
+
     def remove(self, object_to_remove, directory=False, force=True):
         if object_to_remove not in self.__dict__['directories']:
             raise NodeDoesNotExistError
-
+        '''
         if object_to_remove not in self.__dict__['files']:
             raise NodeDoesNotExistError
 
@@ -141,15 +142,16 @@ class Directory(BaseFile):
 
             if not object_to_remove.nodes == []:
                 raise NonEmptyDirectoryDeletionError
-            '''
-            directory_to_remove = self.__dict__['directories'][object_to_remove]
+
+            ###
+            irectory_to_remove = self.__dict__['directories'][object_to_remove]
 
             for node in directory_to_remove.nodes:
                 del nod
-            '''
+
         else:
             del self.__dict__['files'][object_to_remove]
-
+        '''
 
 '''
 class BaseLink:
@@ -229,11 +231,10 @@ class FileSystem:
             parent_directory.add_directory(object_name, new_directory)
 
         self.available_size -= new_object_size
-
-#fs = FileSystem(50)
-#fs.create('/home', directory=True)
-#fs.create('/file', content='file content')
-#fs.create('/home/file2', content='2 content')
+'''
 d = Directory()
-d.add_file('file', File('content'))
-print(d.directories)
+d.add_directory('dir1', Directory())
+d.add_directory('dir2', Directory())
+d.add_file('file1', File('some text'))
+print(d.nodes_pool)
+'''
