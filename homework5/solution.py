@@ -69,6 +69,8 @@ class Directory(BaseFile):
     def __getattribute__(self, name):
         if name == 'files' or name == 'directories':
             return list(self.__dict__[name].keys())
+        elif name == 'nodes':
+            return self.files + self.directories
         else:
             return BaseFile.__getattribute__(self, name)
 
@@ -173,7 +175,7 @@ class FileSystem:
 
         self.available_size -= new_object_size
 
-'''
+
 fs = FileSystem(50)
 initial_avb_size = fs.available_size
 fs.create("/home", True)
@@ -188,4 +190,4 @@ fs.create("/home/oshte/malko", True)
 print(fs.get_node('/home').size)
 
 #self.assertEqual(home.size, 8)
-'''
+print(fs.get_node('/home').nodes)
