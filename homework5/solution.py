@@ -98,7 +98,7 @@ class Directory(BaseFile):
             return BaseFile.__getattribute__(self, name)
 
     def __getattr__(self, name):
-        if name == 'size':
+        def get_size():
             size = 1
 
             for current_file in self.files:
@@ -109,15 +109,13 @@ class Directory(BaseFile):
 
             return size
 
+        attributes = {
+            'size': get_size()
+        }
+
+        return attributes['size']
+
     def __getitem__(self, current_object):
-        '''
-        if current_object in self.files_pool:
-            return self.files_pool[current_object]
-        elif current_object in self.dirs_pool:
-            return self.dirs_pool[current_object]
-        else:
-            raise NodeDoesNotExistError
-        '''
         if current_object in self.nodes_pool:
             return self.nodes_pool[current_object]
         else:
@@ -231,10 +229,9 @@ class FileSystem:
             parent_directory.add_directory(object_name, new_directory)
 
         self.available_size -= new_object_size
-'''
+
 d = Directory()
 d.add_directory('dir1', Directory())
 d.add_directory('dir2', Directory())
 d.add_file('file1', File('some text'))
-print(d.nodes_pool)
-'''
+print(d.size)
