@@ -35,6 +35,10 @@ class MountPointNotEmptyError(FileSystemMountError):
     pass
 
 
+class NotEnoughSpaceError(FileSystemError):
+    pass
+
+
 class BaseFile:
     def __init__(self, is_directory):
         self.is_directory = is_directory
@@ -68,18 +72,25 @@ class Directory(BaseFile):
         else:
             return BaseFile.__getattribute__(self, name)
 
+    def __getattr__(self, name):
+        if name == 'size':
+            size = 1
+
+            for current_file in self.__dict__['files'].values():
+                size += current_file.size
+
+            for current_directory in self.__dict__['directories'].values():
+                size += current_directory.size
+
+            return size
+
     def __getitem__(self, current_object):
         if current_object in self.__dict__['files']:
             return self.__dict__['files'][current_object]
         elif current_object in self.__dict__['directories']:
             return self.__dict__['directories'][current_object]
         else:
-            print("getitem {}".format(current_object))
             raise NodeDoesNotExistError
-
-    def __getattr__(self, name):
-        if name == 'size':
-            return 1
 
     def add_file(self, file_name, file_object):
         self.__dict__['files'].update({file_name: file_object})
@@ -107,6 +118,9 @@ class HardLink(BaseLink):
 
 class FileSystem:
     def __init__(self, size):
+        if not size > 0:
+            raise NotEnoughSpaceError
+
         self.home = Directory()
         self.size = size
         self.available_size = self.size - self.home.size
@@ -120,7 +134,6 @@ class FileSystem:
                 return current_directory
         else:
             current_path, rest_path = path.lstrip('/').split('/', 1)
-            print("\n{}\n{} - {}".format(path, current_path, rest_path))
             current_directory = current_directory[current_path.lstrip('/')]
             return self.__find_object(current_directory, '/' + rest_path)
 
@@ -144,47 +157,35 @@ class FileSystem:
 
         if not directory:
             new_file = File(content)
-            parent_directory.add_file(object_name, new_file)
             new_object_size = new_file.size
+
+            if not self.available_size - new_object_size >= 0:
+                raise NotEnoughSpaceError
+
+            parent_directory.add_file(object_name, new_file)
         else:
             new_directory = Directory()
-            parent_directory.add_directory(object_name, new_directory)
             new_object_size = new_directory.size
+
+            if not self.available_size - new_object_size >= 0:
+                raise NotEnoughSpaceError
+            parent_directory.add_directory(object_name, new_directory)
 
         self.available_size -= new_object_size
 
-
-fs = FileSystem(16)
-fs.create('/home', directory=True)
-fs.create('/home/foo', directory=True)
-fs.create('/home/foo/joo', directory=True)
-print(fs.get_node('/home/foo/joo').directories)
-
-#fs.create('/home/foo/joo/roo', directory=True)
-
-
-# with self.assertRaises(solution.DestinationNodeExistsError):
-#            fs.create('/home/foo/joo/roo', directory=True)fs = FileSystem(50)
-#fs.create('/home', directory=True)
-#fs.create('/home/usr', directory=True)
-#print(fs.get_node('/home/usr'))
-#fs.create('/home/usr', directory=True)
-
-#fs.create('/home/a', directory=True)
-#print("\n a createrd")
-#print(fs.get_node('/home/a'))
-#print(fs.get_node('/home/a').directories)
-#fs.create('/home/georgi', directory=True)
-
-#print(fs.get_node('/').directories)
-
 '''
-d = Directory()
-f = File("first_File_content_here")
-d.add_file("first_file", f)
-d.add_file("second_file", File("second file"))
+fs = FileSystem(50)
+initial_avb_size = fs.available_size
+fs.create("/home", True)
+fs.create("/home/pavel", True)
+fs.create("/justfile", False, "1234")
+all_sizes = 7
 
-d.add_directory("dir 1", Directory())
+#self.assertEqual(fs.available_size, initial_avb_size - all_sizes)
+fs.create("/home/trip", False, "123")
+fs.create("/home/oshte", True)
+fs.create("/home/oshte/malko", True)
+print(fs.get_node('/home').size)
 
-print(d['dir 1/'].files)
+#self.assertEqual(home.size, 8)
 '''
