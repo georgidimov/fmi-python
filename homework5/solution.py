@@ -39,6 +39,18 @@ class NotEnoughSpaceError(FileSystemError):
     pass
 
 
+class FileSystemDirectoryError(FileSystemError):
+    pass
+
+
+class NonExplicitDirectoryDeletionError(FileSystemDirectoryError):
+    pass
+
+
+class NonEmptyDirectoryDeletionError(FileSystemDirectoryError):
+    pass
+
+
 class BaseFile:
     def __init__(self, is_directory):
         self.is_directory = is_directory
@@ -63,15 +75,30 @@ class File(BaseFile):
 class Directory(BaseFile):
     def __init__(self):
         BaseFile.__init__(self, True)
-        self.files = {}
-        self.directories = {}
+        self.files_container = {}
+        self.directories_container = {}
 
     def __getattribute__(self, name):
+        '''
         if name == 'files' or name == 'directories':
             return list(self.__dict__[name].values())
-
         elif name == 'nodes':
             return self.files + self.directories
+        else:
+            return BaseFile.__getattribute__(self, name)
+        '''
+        get_values = lambda name: object.__getattribute__(self, name).values()
+        attributes = {
+            #'files': super(Directory, self).__getattribute__(name)
+#            'files': list(object.__getattribute__(self, 'files_container').values()),
+            'files': list(get_values('files_container')),
+            'directories': list(get_values('directories_container'))
+#            'directories': object.__getattribute__(self, name),
+            #'nodes': object.__getattribute__(self, 'files') + object.__getattribute__(self, 'directories')
+        }
+
+        if name in attributes:
+            return attributes[name]
         else:
             return BaseFile.__getattribute__(self, name)
 
@@ -96,10 +123,34 @@ class Directory(BaseFile):
             raise NodeDoesNotExistError
 
     def add_file(self, file_name, file_object):
-        self.__dict__['files'].update({file_name: file_object})
-
+#        self.__dict__['files_container'].update({file_name: file_object})
+        self.files_container.update({file_name: file_object})
     def add_directory(self, directory_name, directory_object):
-        self.__dict__['directories'].update({directory_name: directory_object})
+#        self.__dict__['directories'].update({directory_name: directory_object})
+        self.directories_container.update({directory_name: directory_object})
+    def remove(self, object_to_remove, directory=False, force=True):
+        if object_to_remove not in self.__dict__['directories']:
+            raise NodeDoesNotExistError
+
+        if object_to_remove not in self.__dict__['files']:
+            raise NodeDoesNotExistError
+
+        if object_to_remove in self.directories:
+            if not directory:
+                raise NonExplicitDirectoryDeletionError
+
+            if not object_to_remove.nodes == []:
+                raise NonEmptyDirectoryDeletionError
+            '''
+            directory_to_remove = self.__dict__['directories'][object_to_remove]
+
+            for node in directory_to_remove.nodes:
+                del nod
+            '''
+        else:
+            del self.__dict__['files'][object_to_remove]
+
+
 '''
 class BaseLink:
     def __init__(self, link_path, symbolic=True):
@@ -178,3 +229,11 @@ class FileSystem:
             parent_directory.add_directory(object_name, new_directory)
 
         self.available_size -= new_object_size
+
+#fs = FileSystem(50)
+#fs.create('/home', directory=True)
+#fs.create('/file', content='file content')
+#fs.create('/home/file2', content='2 content')
+d = Directory()
+d.add_file('file', File('content'))
+print(d.directories)
