@@ -68,7 +68,8 @@ class Directory(BaseFile):
 
     def __getattribute__(self, name):
         if name == 'files' or name == 'directories':
-            return list(self.__dict__[name].keys())
+            return list(self.__dict__[name].values())
+
         elif name == 'nodes':
             return self.files + self.directories
         else:
@@ -140,7 +141,10 @@ class FileSystem:
             return self.__find_object(current_directory, '/' + rest_path)
 
     def get_node(self, path):
-        return self.__find_object(self.home, path)
+        if path == '':
+            raise NodeDoesNotExistError
+        else:
+            return self.__find_object(self.home, path)
 
     def create(self, path, directory=False, content=''):
         current_path, object_name = path.rsplit('/', 1)
@@ -174,20 +178,3 @@ class FileSystem:
             parent_directory.add_directory(object_name, new_directory)
 
         self.available_size -= new_object_size
-
-
-fs = FileSystem(50)
-initial_avb_size = fs.available_size
-fs.create("/home", True)
-fs.create("/home/pavel", True)
-fs.create("/justfile", False, "1234")
-all_sizes = 7
-
-#self.assertEqual(fs.available_size, initial_avb_size - all_sizes)
-fs.create("/home/trip", False, "123")
-fs.create("/home/oshte", True)
-fs.create("/home/oshte/malko", True)
-print(fs.get_node('/home').size)
-
-#self.assertEqual(home.size, 8)
-print(fs.get_node('/home').nodes)
